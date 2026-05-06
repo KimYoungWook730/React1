@@ -1,9 +1,28 @@
-import Foo from "./Profile"
+import Gallery from "./components/Gallery"
+import MovieHeroes from "./components/MovieHeroes"
+import NamedCompontTest from "./components/NamedComponentTest"
+import PackingList from "./components/PackingList"
+import ParentComp from "./components/ParentComp"
+import SpreadComp from "./components/SpreadComp"
+import UseJsx from "./components/UseJsx"
+import Kiosk from "./components/Kiosk"
+import TeaSet from "./components/TeaSet"
+import ButtonCom from "./components/ButtonCom/ButtonCom"
+import Toolbar from "./components/Toolbar"
 
 export default function App( ){
   return(
     <>
-      <Foo />
+      {/* <NamedCompontTest /> */}
+      {/* <Gallery /> */}
+      {/* {<ParentComp />} */}
+      {/* {<SpreadComp />} */}
+      {/* {<PackingList/>} */}
+      {/* {<MovieHeroes/>} */}
+      {/* <Kiosk/> */}
+      {/* <TeaSet /> */}
+      {/* <ButtonCom /> */}
+      <Toolbar/>
     </>
   )
 }
