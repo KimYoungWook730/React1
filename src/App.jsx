@@ -9,6 +9,7 @@ import Kiosk from "./components/Kiosk"
 import TeaSet from "./components/TeaSet"
 import ButtonCom from "./components/ButtonCom/ButtonCom"
 import Toolbar from "./components/Toolbar"
+import Bubble from "./components/Bubble/Bubble"
 
 export default function App( ){
   return(
@@ -22,7 +23,8 @@ export default function App( ){
       {/* <Kiosk/> */}
       {/* <TeaSet /> */}
       {/* <ButtonCom /> */}
-      <Toolbar/>
+      {/* <Toolbar/> */}
+      <Bubble/>
     </>
   )
 }
