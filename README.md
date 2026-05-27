@@ -2,6 +2,256 @@
 
 ---
 
+## 📅 12주차 (5월 20일)
+# 12주차 학습 기록: useState Hook과 캐러셀 완성
+
+---
+
+## 1. 로컬 변수의 한계
+
+로컬 변수로 컴포넌트 상태를 관리하면 두 가지 문제가 발생한다.
+
+- 렌더링과 렌더링 사이에 변경 사항이 유지되지 않음
+- 로컬 변수가 변경되어도 React가 컴포넌트를 다시 렌더링하지 않음
+
+```jsx
+// 문제 있는 방식 - 버튼을 클릭해도 화면이 바뀌지 않음
+let index = 0;
+
+function handleClick() {
+  index = index + 1; // 값은 변하지만 리렌더링이 발생하지 않음
+  console.log(index);
+}
+```
+
+---
+
+## 2. useState Hook으로 상태 저장하기
+
+컴포넌트를 새 데이터로 업데이트하려면 렌더링 간 데이터 유지와 새로운 데이터로의 리렌더링 트리거, 두 가지가 필요하다. `useState` Hook이 이를 해결한다.
+
+- `useState`를 `react`에서 import하여 사용
+- `const [state변수, setter함수] = useState(초기값)` 형태로 선언
+- setter 함수 이름은 관례적으로 `set` + 변수명을 사용
+
+```jsx
+import { useState } from 'react';
+
+export default function Carousel() {
+  const [index, setIndex] = useState(0);
+
+  function handleNext() {
+    if (index === galleryImages.length - 1) {
+      setIndex(0);
+    } else {
+      setIndex(index + 1);
+    }
+  }
+  // ...
+}
+```
+
+---
+
+## 3. state 스냅샷 특성
+
+state는 setter 함수를 호출한 즉시 바뀌는 것이 아니라, 다음 렌더링 시점에 반영된다.
+
+```jsx
+function handleClick() {
+  setIndex(index + 1); // 현재 index 0 → 다음 렌더링에서 1이 됨
+  console.log(index);  // 아직 0 출력 (스냅샷)
+}
+```
+
+- 이벤트 핸들러 실행 중에는 현재 렌더링의 state 값(스냅샷)이 사용됨
+- `setIndex` 호출 후 `index`를 읽어도 이전 값이 반환됨
+
+---
+
+## 4. 배열 범위 초과 방지
+
+state를 사용해 index가 배열의 마지막 인덱스를 초과하면 0으로 초기화하는 순환 로직을 구현한다.
+
+```jsx
+function handleNext() {
+  if (index === galleryImages.length - 1) {
+    setIndex(0);
+  } else {
+    setIndex(index + 1);
+  }
+}
+
+function handlePrevious() {
+  if (index === 0) {
+    setIndex(galleryImages.length - 1);
+  } else {
+    setIndex(index - 1);
+  }
+}
+```
+
+---
+
+## 5. 이미지 데이터 모듈 관리
+
+이미지가 많을 경우 index 파일을 활용해 데이터를 모듈화하면 컴포넌트 코드가 간결해진다.
+
+```jsx
+// /src/components/Carousel/imgData.jsx
+import { slide } from "./images";
+
+export const galleryImages = [
+  { name: "Slide 1", artist: "Artist 1", url: "https://...", alt: "Slide 1" },
+  { name: "Slide 4", artist: "Artist 4", url: slide.slider1, alt: "Slide 4" },
+  // ...
+];
+```
+
+---
+
+## 핵심 정리
+
+- 로컬 변수는 렌더링 간 유지되지 않고, 리렌더링을 트리거하지 않는다
+- `useState`는 렌더링 간 데이터 유지 + 리렌더링 트리거를 모두 해결한다
+- state 업데이트는 다음 렌더링에 반영된다 (스냅샷 특성)
+- index 범위 초과 방지 로직으로 순환 캐러셀을 구현할 수 있다
+- 이미지 데이터는 별도 모듈로 분리하면 관리가 편하다
+
+---
+
+## 한줄 정리
+
+useState Hook을 활용해 컴포넌트 상태를 올바르게 관리하고, state의 스냅샷 특성을 이해하며 순환 캐러셀을 완성하였다.
+
+---
+
+## 📅 11주차 (5월 13일)
+# 11주차 학습 기록: 이벤트 전파와 State 개념
+
+---
+
+## 1. 이벤트 전파 (Event Bubbling)
+
+DOM 트리의 하위 요소에서 발생한 이벤트는 상위 요소로 전달된다. 이를 이벤트의 전파(버블링)라고 한다.
+
+- `<button>` 클릭 시 이벤트가 부모 `<div>`나 `<nav>`에도 전달됨
+- React에서는 `onScroll`을 제외한 모든 이벤트가 전파됨
+
+```jsx
+<nav onClick={() => alert("네비게이션바 클릭!")}>
+  <Button onClick={() => alert("버튼1 클릭!")}>버튼1</Button>
+  <Button onClick={() => alert("버튼2 클릭!")}>버튼2</Button>
+</nav>
+// 버튼 클릭 시 버튼 alert → 네비게이션바 alert 순으로 실행됨
+```
+
+---
+
+## 2. 이벤트 전파 중지 — e.stopPropagation()
+
+이벤트 핸들러는 이벤트 오브젝트를 유일한 매개변수로 받으며, 관례적으로 `e`로 줄여 사용한다. `e.stopPropagation()`을 호출하면 이벤트가 상위 태그로 전달되지 않는다.
+
+```jsx
+function Button({ onClick, children }) {
+  return (
+    <button onClick={e => {
+      e.stopPropagation(); // 버블링 중단
+      onClick();           // 부모로부터 전달받은 핸들러 실행
+    }}>
+      {children}
+    </button>
+  );
+}
+```
+
+클릭 시 처리 순서:
+1. React가 `<button>`의 `onClick` 핸들러 호출
+2. `e.stopPropagation()`으로 버블링 차단
+3. prop으로 전달받은 `onClick` 함수 실행
+4. 부모 `<div>`의 `onClick`은 실행되지 않음
+
+---
+
+## 3. 브라우저 기본 동작 방지 — e.preventDefault()
+
+`e.stopPropagation()`과 `e.preventDefault()`는 혼동하지 말아야 한다.
+
+- `e.stopPropagation()` → 이벤트가 상위 태그에서 실행되지 않도록 중단
+- `e.preventDefault()` → 브라우저의 기본 동작을 방지 (예: `<form>` 제출 시 페이지 리로드 차단)
+
+```jsx
+export default function Signup2() {
+  return (
+    <form onSubmit={e => {
+      e.preventDefault(); // 페이지 리로드 방지
+      alert('Submitting!');
+    }}>
+      <input />
+      <button>Send2</button>
+    </form>
+  );
+}
+```
+
+---
+
+## 4. 이벤트 핸들러와 사이드 이펙트
+
+이벤트 핸들러는 순수할 필요가 없기 때문에 사이드 이펙트를 처리하기에 최적의 위치이다.
+
+- 타이핑에 반응해 입력 값 수정
+- 버튼 클릭에 따라 리스트 변경
+- 단, 정보를 수정하려면 먼저 그 정보를 저장하는 수단이 필요 → **State**
+
+---
+
+## 5. State의 개념
+
+State는 컴포넌트의 기억 저장소이다. React는 컴포넌트별 메모리를 state라고 부른다.
+
+- 폼 입력값, 이미지 캐러셀의 현재 이미지, 장바구니 상태 등 "기억"이 필요한 경우에 사용
+- 렌더링 결과에 영향을 미치는 컴포넌트별 데이터를 보관
+
+```jsx
+// 로컬 변수 방식의 문제점 - 화면이 업데이트되지 않음
+let index = 0;
+index = index + 1; // side effect 발생, 리렌더링 없음
+```
+
+---
+
+## 6. index 파일을 활용한 이미지 관리
+
+이미지가 많아지면 각각 import하는 코드가 복잡해진다. index 파일을 만들어 한 곳에서 관리하면 컴포넌트 코드를 간결하게 유지할 수 있다.
+
+```jsx
+// images/index.js - 방법1: 개별 export
+import image1 from "./image1.jpg";
+export { image1, image2, image3 };
+
+// images/index.js - 방법2: 객체로 묶어서 export (권장)
+export const images = { image1, image2, image3 };
+```
+
+---
+
+## 핵심 정리
+
+- 이벤트 전파: DOM 트리 하위에서 발생한 이벤트가 상위로 버블링됨
+- `e.stopPropagation()`: 이벤트가 더 이상 버블링되지 않도록 중단
+- `e.preventDefault()`: 브라우저 기본 동작(예: 폼 리로드) 방지
+- 두 함수는 서로 다른 역할이므로 혼동하지 않아야 함
+- State는 컴포넌트가 렌더링 간 정보를 "기억"하는 수단
+
+---
+
+## 한줄 정리
+
+이벤트 전파 원리와 stopPropagation/preventDefault의 차이를 이해하고, 컴포넌트가 정보를 기억하기 위해 State가 필요함을 학습하였다.
+
+---
+
 ## 📅 10주차 (5월 6일)
 # 10주차 학습 기록: children props와 이벤트 핸들러
 
