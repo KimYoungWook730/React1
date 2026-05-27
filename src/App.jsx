@@ -31,6 +31,7 @@ export default function App( ){
       {/* <Signup1/> */}
       {/* <Signup2/> */}
       <Carousel/>
+      <Carousel/>
     </>
   )
 }

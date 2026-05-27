@@ -5,9 +5,10 @@ import style from "./Carousel.module.css"
 export default function Carousel() {
     
     const [index, setIndex] = useState(0)
+    const [more, setMore] = useState(false);
 
 
-    function handleClick() {
+    function handleNext() {
         if (index === galleryimages.length - 1) {
             setIndex(0)
         } else{
@@ -25,6 +26,10 @@ export default function Carousel() {
         }
     }
 
+    function handleMoreClick() {
+        setMore(!more);
+    }
+
     let slide = galleryimages[index];
     return(
         <section className={style.wrapper}>
@@ -36,11 +41,15 @@ export default function Carousel() {
                 ({index + 1} of {galleryimages.length})
             </h3>
             <img src={slide.url} alt={slide.alt} />
+            {/* <p>{slide.description}</p> */}
             <p>
                 <button onClick={handlePrevious}  className={style.button}>Previous</button>
-                <button onClick={handleClick}  className={style.button}>Next</button>
+                <button onClick={handleNext}  className={style.button}>Next</button>
             </p>
-            <p>{slide.description}</p>
+            <button onClick={handleMoreClick}>
+                {more ? "Hide" : "Show"} description
+            </button>
+            {more && <p>{slide.description}</p>}
         </section>
     );
 }
