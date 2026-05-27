@@ -2,6 +2,221 @@
 
 ---
 
+## 📅 13주차 (5월 27일)
+# 13주차 학습 기록: State Hook 동작 원리와 렌더링 과정
+
+---
+
+## 1. React가 state를 강조하는 이유
+
+React의 핵심 철학 자체가 state 기반 UI이기 때문에 state는 React에서 특별히 강조된다.
+
+- React의 렌더링 모델 대부분이 state로 설명됨
+- 다른 Hook들도 결국 state 문제를 해결하기 위한 도구
+- React 팀은 "DOM 직접 조작"보다 "상태 기반 사고"를 가장 중요하게 여김
+- `useEffect` 같은 것은 핵심 모델이 아니라 외부 시스템과 동기화하기 위한 예외 처리 장치(escape hatch)에 가까움
+
+React의 거의 모든 기능은 state 중심으로 연결되며, 결국 "state가 변하면 UI를 어떻게 유지할 것인가?"라는 문제를 해결하는 도구들이다.
+
+| 기능 | 하는 일 |
+|------|---------|
+| useState | State 저장 |
+| useReducer | 복잡한 State 관리 |
+| Context | State 공유 |
+| useMemo | state 기반 계산 최적화 |
+| useEffect | state 변화 후 동작 |
+| Suspense | 비동기 상태 처리 |
+| Server Components | 상태 경계 최적화 |
+
+---
+
+## 2. Hook의 개념과 사용 규칙
+
+`useState`와 같이 `use`로 시작하는 모든 함수를 Hook이라고 한다.
+
+- Hook은 React가 오직 렌더링 중일 때만 사용할 수 있는 특별한 함수
+- Hook을 사용하면 다양한 React 기능을 "연결(hook into)"할 수 있음
+- `useState`는 React에서 제공하는 여러 Hook 중 하나
+
+Hook 사용 시 주의사항:
+1. Hook은 일반 모듈과 마찬가지로 `import` 해서 사용
+2. Hook은 컴포넌트의 최상위 수준 또는 사용자 정의 Hook에서만 호출 가능
+3. 조건문, 반복문 또는 기타 중첩 함수 내부에서는 Hook을 호출할 수 없음
+
+> Hook은 함수의 형식을 취하고 있지만 "컴포넌트가 어떤 기능을 필요로 하는지 React에게 자신의 요구사항을 알려주는 **선언문**"으로 이해하는 것이 좋다.
+
+---
+
+## 3. useState 구조 심화
+
+`useState(0)`은 문법적으로는 함수 호출이지만, React의 관점에서는 "이 컴포넌트는 state가 필요하다"라고 선언하는 것으로 이해하는 것이 좋다.
+
+```jsx
+const [index, setIndex] = useState(0);
+// → "React야, index를 기억하기를 원한다"는 선언
+```
+
+- 변수 이름이 결정되면 setter 함수의 이름은 변수 이름 앞에 `set`을 붙여서 지정하는 것이 관례 (pascalCase 사용)
+- 원하는 이름을 사용할 수도 있지만 가독성이 크게 떨어지므로 이 규칙을 엄격하게 지키는 것이 좋음
+
+useState의 실제 작동 순서:
+1. 컴포넌트가 초기 렌더링을 함
+2. index의 초기값으로 `useState`를 사용해 0이 전달되었기 때문에 `[0, setIndex]`를 반환 → React는 0을 최신 state 값으로 기억
+3. 사용자가 버튼을 클릭하면 `setIndex(index + 1)` 호출 → `setIndex(1)` 이 됨 → React가 index 값이 1임을 기억하게 하고, 두 번째 렌더링을 함
+4. React는 여전히 `useState(0)`를 보고 있지만, index가 1로 설정된 것을 기억하고 있기 때문에 `[1, setIndex]`를 반환
+5. 버튼을 클릭할 때마다 이와 같은 동작이 반복됨
+
+---
+
+## 4. 여러 개의 state 사용하기
+
+하나의 컴포넌트에서 사용할 수 있는 state 변수의 개수에는 제한이 없으며, 원하는 타입의 state 변수를 가질 수 있다.
+
+```jsx
+export default function Carousel() {
+  const [index, setIndex] = useState(0);
+  const [more, setMore] = useState(false);
+  // ...
+}
+```
+
+- 하나의 컴포넌트에 두 개 이상의 state 변수를 사용할 때, 변수들이 함께 변경되는 경우가 자주 발생한다면 하나로 합치는 것이 더 좋을 수 있음
+- 필드가 많은 폼의 경우 필드별로 state 변수를 사용하는 것보다 하나의 객체 state 변수를 사용하는 것이 더 편리함
+- `index`와 `more`가 서로 연관이 없는 경우에는 state 변수를 나누는 것이 좋음
+
+실습 예시: 토글 버튼으로 description 표시 여부 제어하기
+1. 불리언(Boolean) 타입의 State 추가 (`more`)
+2. 토글할 수 있는 `handleMoreClick` 이벤트 핸들러 작성
+3. 버튼을 추가하고, 클릭 이벤트에 `handleMoreClick` 핸들러 전달
+4. 버튼 라벨은 `more`의 값에 따라 `Hide description` / `Show description`으로 변경
+5. `more`가 `true`면 description을 보여주고, `false`면 보이지 않게 함
+
+---
+
+## 5. State의 격리와 비공개 특성
+
+State는 렌더링된 화면에서 컴포넌트 객체에 지역적이다.
+
+- 동일한 컴포넌트를 몇 번 중첩하여 렌더링하더라도 각 복사본은 완전히 격리된 state를 가짐
+- 어떤 컴포넌트의 state를 변경해도 다른 컴포넌트의 state에는 영향을 미치지 않음
+- 부모 컴포넌트도 자식의 state를 변경할 수 없음
+- Props와 달리 state는 선언한 컴포넌트에 외에는 완전히 비공개
+
+```jsx
+// App.jsx에 동일 컴포넌트를 두 번 렌더링해도 state는 각각 독립적
+export default function App() {
+  return (
+    <>
+      <Carousel />
+      <Carousel />
+    </>
+  );
+}
+```
+
+> 두 개의 캐러셀 state를 동기화하고 싶다면, 자식 컴포넌트에서 state를 제거하고 가장 가까운 공통 부모 컴포넌트에 state를 추가하면 된다. → 이것을 **컴포넌트 간 state 공유**라고 한다.
+
+---
+
+## 6. 렌더링 과정의 3단계
+
+React는 컴포넌트가 화면에 표시되기 전에 렌더링(rendering) 과정을 거치며, 이 과정은 3단계로 진행된다.
+
+### 1단계: 렌더링 트리거(Rendering Trigger)
+
+컴포넌트 렌더링이 일어나는 이유는 2가지이다.
+1. 컴포넌트의 초기 렌더링인 경우
+2. 컴포넌트의 state가 업데이트된 경우
+
+**초기 렌더링**: 앱을 시작할 때 초기 렌더링을 촉발시켜야 한다. 대상 DOM 노드와 함께 `createRoot`를 호출한 다음 해당 컴포넌트로 `render` 메서드를 호출하면 완료된다.
+
+**State 업데이트**: 컴포넌트가 초기 렌더링 된 후에는 `set` 함수를 통해 state를 업데이트해서, 추가적인 렌더링을 촉발시킬 수 있다. 컴포넌트의 state를 업데이트하면 자동으로 렌더링 큐(queue)에 추가되고, 순서대로 렌더링한다.
+
+```jsx
+// main.jsx - 초기 렌더링
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+```
+
+> **[Note] StrictMode 컴포넌트**: 개발 모드에서 애플리케이션의 잠재적인 버그와 부작용(Side Effects)을 조기에 발견할 수 있도록 돕는 검사 도구. 배포(Production) 환경에서는 전혀 영향을 주지 않는 안전장치임.
+
+> **[Note] 렌더링 큐(Queue)**: 큐(Queue)는 선입선출(FIFO: First In First Out) 자료구조. 렌더링 큐는 렌더링 요청을 순서대로 보관했다가 가장 먼저 요청한 것부터 차례대로 처리한다.
+
+### 2단계: React 컴포넌트 렌더링
+
+"렌더링"이란 React가 컴포넌트(함수)를 호출하는 것이다. 이 프로세스는 재귀적(Recursive)으로 발생한다.
+
+- 초기 렌더링에서 React는 루트 컴포넌트를 호출
+- 초기 렌더링 이후 React는 state 업데이트가 일어나면 렌더링을 촉발시킨 컴포넌트를 호출
+- State의 업데이트가 발생한 컴포넌트가 다른 컴포넌트를 중첩하고 있다면, 해당 컴포넌트를 렌더링하고 중첩이 끝날 때까지 렌더링은 계속됨
+
+```jsx
+// React에서의 재귀적 렌더링 흐름 예시
+function App() { return <Gallery />; }
+function Gallery() { return <Profile />; }
+function Profile() { return <img src="..." />; }
+
+// App 렌더링 → Gallery 렌더링 → Profile 렌더링 → img 생성
+```
+
+### 3단계: React가 DOM에 변경사항을 커밋
+
+React는 컴포넌트를 렌더링(호출)한 후에 DOM을 수정한다.
+
+- 초기 렌더링의 경우 `appendChild()` DOM API를 사용해서, 생성한 모든 DOM 노드를 화면에 표시
+- 리렌더링의 경우 최신 렌더링의 출력과 일치하도록 DOM을 변경하기 위해 필요한 최소한의 작업만 적용
+
+---
+
+## 7. 스냅샷처럼 동작하는 State
+
+state 변수는 읽고 쓸 수 있는 일반 자바스크립트 변수처럼 보일 수 있지만, state는 스냅샷처럼 동작한다.
+
+- state 변수를 set 함수로 업데이트해도 이미 가지고 있는 state 변수는 변경되지 않고, 대신 리렌더링이 촉발(트리거)됨
+- 컴포넌트의 state에서는 set 함수의 호출이 트리거로 작용하여 렌더링이 이루어짐
+
+"렌더링"이란 React가 컴포넌트(함수)를 호출한다는 뜻이며, 호출된 컴포넌트에서 반환하는 JSX는 특정 시점의 UI 스냅샷과 같은 것이다.
+
+React가 컴포넌트를 다시 렌더링하는 과정:
+1. 상호작용이 발생하면 React가 컴포넌트를 다시 호출하고, 스냅샷을 계산
+2. 컴포넌트가 새로운 JSX 스냅샷을 반환
+3. React는 컴포넌트가 반환한 스냅샷과 일치하도록 화면을 업데이트 (DOM tree 업데이트)
+4. 새로운 state로 이벤트 핸들러를 생성하고 다음 상호작용을 기다림
+
+state는 컴포넌트의 메모리로 동작하기 때문에 보통의 함수가 반환된 후 사라지는 일반 변수와는 다르다.
+
+- state는 컴포넌트 내부에 있는 것이 아니라 **React 내부에 존재**
+- React가 컴포넌트를 호출하면 특정 렌더링에 대한 state의 스냅샷을 제공
+- 스냅샷을 제공받은 컴포넌트는 해당 렌더링의 state 값으로 계산된 새로운 props 세트와 이벤트 핸들러가 포함된 UI 스냅샷을 JSX에 반환
+
+상호작용이 발생하면 state는 다음 작업을 수행한다:
+1. React에 state를 업데이트하라고 명령
+2. React가 state 값을 업데이트
+3. React는 업데이트된 state 값의 스냅샷을 컴포넌트에 전달
+
+---
+
+## 핵심 정리
+
+- React의 모든 기능은 state 중심으로 연결되어 있다
+- Hook은 `use`로 시작하는 함수이며, 컴포넌트 최상위 수준에서만 호출 가능하다
+- `useState`는 "이 컴포넌트는 state가 필요하다"는 선언으로 이해하는 것이 좋다
+- 하나의 컴포넌트에 state 변수를 여러 개 사용할 수 있으며, 서로 연관 없는 값은 분리하는 것이 좋다
+- State는 컴포넌트에 지역적이고 비공개이며, 동일 컴포넌트를 여러 번 렌더링해도 각각의 state는 격리된다
+- React의 렌더링 과정은 렌더링 트리거 → 컴포넌트 렌더링 → DOM 커밋의 3단계로 이루어진다
+- State는 스냅샷처럼 동작하며, React 내부에 존재한다
+
+---
+
+## 한줄 정리
+
+Hook의 동작 원리와 여러 state 관리 방법을 이해하고, 렌더링의 3단계 과정과 state의 스냅샷 특성을 통해 React가 UI를 업데이트하는 방식을 학습하였다.
+
+---
+
 ## 📅 12주차 (5월 20일)
 # 12주차 학습 기록: useState Hook과 캐러셀 완성
 
