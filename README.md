@@ -2,6 +2,188 @@
 
 ---
 
+## 📅 14주차 (6월 5일)
+# 14주차 학습 기록: State 배치처리(Batching)와 GitHub Pages 배포
+
+---
+
+## 1. 시간 경과에 따른 State — 스냅샷 특성 심화
+
+State는 렌더링 시점의 스냅샷으로 고정되며, 이벤트 핸들러 실행 중에는 변경되지 않는다.
+
+- 클릭 핸들러 내부에서 `setNumber(number + 5)` 호출 후 `alert(number)`를 실행하면 `0`이 출력됨
+- React에 저장된 state는 alert창이 실행될 때 변경될 수 있지만, 사용자가 상호작용한 시점에 이전에 저장되어 있던 state 스냅샷을 사용하기 때문
+- 이것은 이전의 스냅샷이 저장되는 순간 이미 예약된 작업
+- 이벤트 핸들러의 코드가 비동기식이라도 렌더링하는 동안 state 변수 값은 절대 변경되지 않음
+- 해당 렌더링의 `onClick` 내에서 `setNumber(number + 5)`가 호출된 후에도 `number`의 값은 계속 `0`
+- React는 렌더링의 이벤트 핸들러 안에서 state 값을 "고정"으로 유지함
+
+```jsx
+// 아래 handleIncrease5에서 버튼을 클릭하면 alert에는 0이 표시됨
+function handleIncrease5() {
+  setNumber(number + 5);
+  alert(number); // 스냅샷 값인 0이 출력됨
+}
+```
+
+---
+
+## 2. React state 업데이트의 배치처리 (Batching)
+
+React는 여러 state 업데이트를 하나로 묶어 처리하는 배치처리(batching)를 수행한다.
+
+- `set` 함수로 state 변수를 저장하면 새로운 렌더링이 큐에 들어감
+- 그러나 경우에 따라서는 렌더링을 큐에 넣기 전에, state 변수 값에 몇 가지 작업을 수행하고 싶을 때도 있음
+- React는 이벤트 핸들러의 모든 코드가 실행될 때까지 state를 업데이트 하지 않고 대기함
+- 따라서 `setNumber()` 호출이 모두 완료된 이후에만 리렌더링이 일어남
+- React는 이 프로세스로 동작하기 때문에 불필요하게 많은 트리거의 발생 없이 복수의 state 변수를 업데이트할 수 있음
+- 이 프로세스를 **배칭(batching)** 이라고 함
+
+```jsx
+// setNumber(number + 1)을 계속 호출해도 number 값은 항상 0으로 고정됨
+function handleIncrease3() {
+  setNumber(number + 1);
+  setNumber(number + 1);
+  setNumber(number + 1);
+}
+```
+
+이전 실습에서 확인한 바와 같이 각 렌더링의 state 값은 고정되어 있으므로, `setNumber(number + 1)`을 계속 호출한다 해도 `number` 값은 항상 `0`이다.
+
+---
+
+## 3. 업데이터 함수 (Updater Function)
+
+다음 렌더링 전에 동일한 state 변수를 여러 번 업데이트하고 싶을 때는 업데이터 함수를 사용한다.
+
+- `setNumber(number + 1)` 처럼 다음 state 값을 전달하는 대신, `setNumber(n => n + 1)` 처럼 큐에서 하나 전 state를 기반으로 다음 state를 계산하는 함수를 전달할 수 있음
+- 이것은 단순히 state 값을 대체하는 것이 아니라, React에게 "이 state 값을 이렇게 처리해"라고 지시하는 방법
+
+```jsx
+// 업데이터 함수를 사용하면 3번 호출 시 실제로 3씩 증가함
+function handleIncrease3() {
+  setNumber(n => n + 1);
+  console.log(number);
+  setNumber(n => n + 1);
+  console.log(number);
+  setNumber(n => n + 1);
+  console.log(number);
+}
+```
+
+업데이터 함수의 동작 순서:
+
+| 큐 업데이트 | n | return |
+|------------|---|--------|
+| n => n + 1 | 0 | 0 + 1 = 1 |
+| n => n + 1 | 1 | 1 + 1 = 2 |
+| n => n + 1 | 2 | 2 + 1 = 3 |
+
+- `console`에서는 3개의 0이 출력됨 (초기값을 출력하기 때문)
+- 업데이터 함수 `n => n + 1`은 바로 state를 업데이트 하는 것이 아니라 큐를 순회하면서 끝까지 계산한 후 최종 값을 스냅샷으로 저장하고 다음 업데이트에 대비하게 됨
+
+> **[Note] number를 n으로 사용한 이유**: state 변수로 선언된 `number` 대신 set 함수에서 `n`으로 사용하는 것은 둘을 구분하기 위한 것이다. `number` 변수는 렌더링 후 최종적으로 결정된 값을 저장하는 반면, `n`은 업데이터 함수 내에서 지역적으로 사용되는 것임을 분명히 하기 위해서다. React에서 권장하는 업데이터 함수의 명명 규칙은 해당 state 변수의 첫 글자로 지정하는 것이다.
+
+---
+
+## 4. GitHub Pages 기본 저장소
+
+GitHub Pages를 사용해 React 프로젝트를 정적 사이트로 배포할 수 있다.
+
+- GitHub Pages를 운영하려면 먼저 GitHub Pages 저장소를 생성해야 함
+- 생성 방법은 일반 저장소 생성과 동일하지만, 저장소 이름은 도메인 형태로 해야 함
+- 최상위 도메인 부분은 `.com`이 아니라 `.io`로 해야 함 → `<My GitHub ID>.github.io`
+- GitHub에서 직접 저장소를 만들었다면 clone해서 local에서 작업하고 push
+- 처음부터 저장소를 local에 만들었다면 그대로 push (추천)
+
+접속 방법:
+- 기본 저장소: `https://<My GitHub ID>.github.io`로 외부에서 접속 가능
+- 일반 페이지 저장소: `https://<My GitHub ID>.github.io/<repo-name>`으로 접속
+- 이후 다른 이름의 저장소도 페이지로 사용 가능 (단, 페이지로 사용할 저장소가 있다면 설정에서 페이지를 활성화해야 함)
+- 직접 구매한 도메인이 있다면 연결도 가능
+
+---
+
+## 5. GitHub Pages 기본 저장소 생성 및 접속
+
+**clone으로 저장소를 local에 생성하는 경우:**
+
+1. `<github ID>.github.io` 저장소에서 code 버튼을 클릭하고, clone할 주소를 복사
+2. local의 프로젝트 디렉토리로 이동
+3. 터미널에서 `git clone <복사한 주소>` 명령을 실행
+4. `<github ID>.github.io` 저장소로 이동
+5. `index.html`을 적당히 수정(작성)한 후 commit하고 push
+6. 사이트에 접속해서 수정된 것이 반영되었는지 확인
+
+**local에서 저장소를 먼저 생성한 경우:**
+
+1. local에 `<GitHub ID>.github.io` 디렉토리를 생성하고, 해당 디렉토리로 이동하여 git으로 초기화
+2. `index.html` 파일을 생성하고 내용을 적당히 작성한 후 commit하고 push
+3. 사이트에 접속해서 확인
+
+GitHub Pages 활성화 방법: Setting > Pages 메뉴를 선택한 후 branch를 `master(main)`으로 바꾸고 저장
+
+---
+
+## 6. React 프로젝트 GitHub Pages 배포
+
+React 프로젝트를 GitHub Pages에 배포하는 방법이다.
+
+**배포 준비:**
+
+1. GitHub에 `<GitHub ID>.github.io`라는 저장소가 있다면 삭제
+2. React 프로젝트를 `<GitHub ID>.github.io`라는 이름으로 새로 만들고, git으로 초기화
+
+```bash
+npm create vite@latest <GitHub ID>.github.io
+```
+
+3. 간단한 앱을 작성
+4. 프로젝트를 GitHub로 push (저장소는 public으로 해야 함)
+5. GitHub에 저장소가 생성됐는지 확인
+
+**배포 실행:**
+
+```bash
+npm run deploy
+```
+
+배포 후 GitHub에서 Setting > Pages 메뉴를 선택하고, Select branch에서 `gh-pages`를 선택한 후 저장한다. 1~2분 후 사이트에 접속하면 확인할 수 있다.
+
+**Clone 후 배포하는 경우:**
+
+1. local에서 저장소를 삭제
+2. `<github ID>.github.io` 저장소에서 code 버튼을 클릭하고, clone할 주소를 복사
+3. local의 프로젝트 디렉토리로 이동
+4. 터미널에서 `git clone <복사한 주소>` 명령을 실행
+5. `<github ID>.github.io` 저장소로 이동
+6. node를 install (`npm i`)
+7. 코드를 조금 수정한 후 commit하고 push
+8. 터미널에서 `deploy`를 실행
+9. 사이트에 접속해서 확인 (정상 서비스까지는 30초 정도 걸릴 수 있음)
+
+> **[Note] 꼭 commit과 push를 해야 하나?**: 반드시 commit과 push를 할 필요는 없다. 파일을 수정 후 `deploy`를 실행하면 배포가 된다. 그러나 항상 commit하고 push하는 습관이 중요하다.
+
+---
+
+## 핵심 정리
+
+- State는 이벤트 핸들러 실행 중에 스냅샷으로 고정되며, 비동기 코드에서도 변경되지 않는다
+- React의 배치처리(batching)로 이벤트 핸들러의 모든 코드가 실행된 이후에 리렌더링이 일어난다
+- 업데이터 함수(`n => n + 1`)를 사용하면 이전 state를 기반으로 다음 state를 계산할 수 있다
+- 업데이터 함수의 명명 규칙은 해당 state 변수의 첫 글자로 지정하는 것이 React의 권장 방식이다
+- GitHub Pages 배포 시 저장소 이름은 `<GitHub ID>.github.io` 형식으로 만들어야 한다
+- `npm run deploy` 명령으로 React 프로젝트를 GitHub Pages에 배포할 수 있다
+- 배포 후 GitHub Settings > Pages에서 `gh-pages` 브랜치를 선택해야 사이트가 활성화된다
+
+---
+
+## 한줄 정리
+
+State의 스냅샷 특성과 배치처리 원리를 이해하고, 업데이터 함수로 여러 번의 state 업데이트를 올바르게 처리하는 방법을 학습하였으며, GitHub Pages를 통해 React 프로젝트를 배포하는 과정을 실습하였다.
+
+---
+
 ## 📅 13주차 (5월 27일)
 # 13주차 학습 기록: State Hook 동작 원리와 렌더링 과정
 
